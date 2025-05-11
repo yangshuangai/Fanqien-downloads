@@ -1,0 +1,21 @@
+# docker-compose.yml
+version: '3'
+
+services:
+  novel-downloader:
+    build: .
+    ports:
+      - "12930:80"
+    volumes:
+      - /vol1/1000/docker/fanqienovel/novels:/app/novels
+      - /vol1/1000/docker/fanqienovel/data:/app/data
+    environment:
+      - DOWNLOAD_PATH=/app/novels
+      - DATA_PATH=/app/data
+      - FLASK_ENV=production
+      - TZ=Asia/Shanghai
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
