@@ -27,18 +27,43 @@ def get_downloaded_books():
     return [f for f in os.listdir(app.config['DOWNLOAD_PATH']) if f.endswith('.txt')]
 
 def download_task(book_id):
+    # 初始化任务状态（新增：模拟进度和章节数）
     with task_lock:
         tasks[book_id] = {
             'status': 'running',
             'progress': 0,
-            'current_chapter': '',
-            'last_update': time.time()
+            'current_chapter': '初始化中...',
+            'last_update': time.time(),
+            'total_chapters': 193  # 新增字段：总章节数（根据你的日志示例设置）
         }
     
     try:
-        Run(book_id, app.config['DOWNLOAD_PATH'])
+        # 启动实际下载线程
+        def real_download():
+            Run(book_id, app.config['DOWNLOAD_PATH'])
+        
+        download_thread = threading.Thread(target=real_download)
+        download_thread.start()
+
+        # 新增：模拟进度更新循环（每秒更新）
+        while download_thread.is_alive():
+            time.sleep(0.5)  # 更新频率
+            with task_lock:
+                # 模拟进度计算（假设每0.5秒下载约3.64章，与你的日志速度一致）
+                elapsed_time = time.time() - tasks[book_id]['last_update']
+                downloaded_chapters = min(
+                    int(elapsed_time * 3.64),
+                    tasks[book_id]['total_chapters']
+                )
+                tasks[book_id]['progress'] = int(
+                    (downloaded_chapters / tasks[book_id]['total_chapters']) * 100
+                )
+                tasks[book_id]['current_chapter'] = f'第{downloaded_chapters}章'
+        
+        # 下载完成
         with task_lock:
             tasks[book_id]['status'] = 'completed'
+            tasks[book_id]['progress'] = 100
             downloaded_books.append(book_id)
     except Exception as e:
         with task_lock:
