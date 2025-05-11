@@ -127,20 +127,37 @@
             left: 30px;
             top: 100px;
             width: 280px;
+            height: calc(100vh - 140px);
             background: #f5f5f5;
             border-radius: 12px;
             padding: 20px;
             box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
         }
         .books-sidebar h2 {
             margin: 0 0 20px 0;
             color: #666;
             font-size: 18px;
+            flex-shrink: 0;
         }
         #books {
             list-style: none;
             padding: 0;
             margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        #books::-webkit-scrollbar {
+            width: 6px;
+        }
+        #books::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        #books::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
         }
         #books li {
             display: grid;
@@ -167,6 +184,23 @@
         }
         #books button:hover {
             background: rgba(76, 175, 80, 0.1);
+        }
+
+        /* 新增章节更新样式 */
+        .chapter-updates {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f8f8;
+            border-radius: 6px;
+        }
+        .latest-chapter {
+            color: #666;
+            font-size: 0.9em;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         /* 错误提示 */
@@ -227,9 +261,11 @@
             const checkProgress = async () => {
                 try {
                     const response = await axios.get(`/progress/${taskId}`);
-                    updateTaskUI(taskId, response.data);
-                    
-                    if (response.data.status.includes('running')) {
+                    const taskData = response.data;
+                    updateTaskUI(taskId, taskData);
+
+                    // 持续轮询条件：正在运行或有新章节
+                    if (taskData.status === 'running' || taskData.has_updates) {
                         setTimeout(checkProgress, 1000);
                     }
                 } catch (error) {
@@ -248,6 +284,12 @@
                 tasksDiv.appendChild(taskElement);
             }
             
+            // 生成章节更新内容
+            const chapterUpdates = task.chapter_updates || [];
+            const chaptersHTML = chapterUpdates.map(chap => 
+                `<div class="latest-chapter">${new Date().toLocaleTimeString()} 新增章节：${chap}</div>`
+            ).join('');
+
             taskElement.innerHTML = `
                 <div class="task-status-icon"></div>
                 <div class="task-info">
@@ -257,17 +299,29 @@
                             <strong>状态：</strong>${statusMap[task.status] || task.status}
                         </div>
                     </div>
-                    ${task.status === 'running' ? `
+                    ${task.progress !== undefined ? `
                     <div class="progress-container">
                         <div class="progress-bar">
                             <div class="progress" style="width: ${task.progress}%"></div>
                         </div>
                         <div>${task.progress}%</div>
                     </div>
-                    <div class="current-chapter">当前章节：${task.current_chapter || '正在初始化...'}</div>
+                    ` : ''}
+                    ${task.current_chapter ? `
+                    <div class="current-chapter">当前章节：${task.current_chapter}</div>
+                    ` : ''}
+                    ${chaptersHTML.length > 0 ? `
+                    <div class="chapter-updates">
+                        ${chaptersHTML}
+                    </div>
                     ` : ''}
                 </div>
             `;
+
+            // 自动滚动到最新更新
+            if (chaptersHTML.length > 0) {
+                taskElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
         }
 
         function updateBook(bookId) {
