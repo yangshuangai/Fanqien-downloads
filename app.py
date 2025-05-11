@@ -5,8 +5,9 @@ import threading
 import time
 import logging
 import signal
-from Downloader import Run
-
+from Downloader import Run, get_total_chapters
+      
+        
 app = Flask(__name__)
 app.config['DOWNLOAD_PATH'] = os.getenv('DOWNLOAD_PATH', '/app/novels')
 app.config['DATA_PATH'] = os.getenv('DATA_PATH', '/app/data')
@@ -27,15 +28,18 @@ def get_downloaded_books():
     return [f for f in os.listdir(app.config['DOWNLOAD_PATH']) if f.endswith('.txt')]
 
 def download_task(book_id):
-    # 初始化任务状态（新增：模拟进度和章节数）
+    # 初始化任务状态（新增：下载进度和章节数）
     with task_lock:
+        # 动态获取实际章节数（已不需要在此处导入）
+        total_chapters = get_total_chapters(book_id)  # ✅ 直接使用全局导入的函数
+
         tasks[book_id] = {
             'status': 'running',
             'progress': 0,
             'current_chapter': '初始化中...',
             'last_update': time.time(),
-            'total_chapters': 193  # 新增字段：总章节数（根据你的日志示例设置）
-        }
+            'total_chapters': total_chapters  # ✅ 使用动态值
+            }
     
     try:
         # 启动实际下载线程
@@ -98,6 +102,20 @@ def get_progress(task_id):
     with task_lock:
         task = tasks.get(task_id)
     return jsonify(task if task else {'error': 'Task not found'})
+
+# 🔽 新增的update路由（从这里开始）🔽
+@app.route('/update/<book_id>', methods=['POST'])
+def update_book(book_id):
+    with task_lock:
+        if book_id in tasks:
+            return jsonify({'error': 'Task already exists'}), 400
+        
+        # 启动新的下载线程（复用download_task函数）
+        thread = threading.Thread(target=download_task, args=(book_id,))
+        thread.start()
+    
+    return jsonify({'task_id': book_id, 'status_url': f'/progress/{book_id}'})
+# 🔼 新增的update路由（到这里结束） 🔼
 
 @app.route('/favicon.ico')
 def favicon():
