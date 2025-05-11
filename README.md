@@ -2,6 +2,13 @@
 
 这是基于https://github.com/Dlmily/Tomato-Novel-Downloader-Lite项目做的docker版
 
+docker-compose.yml里详细说明了怎么安装：
+
+      - "12930:80"  #12390端口可更改
+    volumes:
+      - /vol1/1000/docker/fanqienovel/novels:/app/novels  #/vol1/1000/docker/fanqienovel/novels可更改
+      - /vol1/1000/docker/fanqienovel/data:/app/data  #/vol1/1000/docker/fanqienovel/data可更改
+
 
 ## 注意事项（必看）
 由于使用的是api，所以未来不知道有哪一天突然失效，如果真的出现了，请立即在“Issues”页面中回复！
