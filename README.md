@@ -2,6 +2,8 @@
 
 这是基于https://github.com/Dlmily/Tomato-Novel-Downloader-Lite项目做的docker版
 
+整个项目下载到本地解压后执行docker-compose.yml安装，安装前修改docker-compose.yml里的映射目录和端口号，映射目录必须修改
+
 docker-compose.yml里详细说明了怎么安装：
 
       - "12930:80"  #12390端口可更改
