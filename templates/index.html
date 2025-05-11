@@ -290,33 +290,34 @@
                 `<div class="latest-chapter">${new Date().toLocaleTimeString()} 新增章节：${chap}</div>`
             ).join('');
 
-            taskElement.innerHTML = `
-                <div class="task-status-icon"></div>
-                <div class="task-info">
-                    <div class="task-meta">
-                        <div><strong>任务ID：</strong>${taskId}</div>
-                        <div class="status-label ${task.status.includes('failed') ? 'failed' : ''}">
-                            <strong>状态：</strong>${statusMap[task.status] || task.status}
-                        </div>
-                    </div>
-                    ${task.progress !== undefined ? `
-                    <div class="progress-container">
-                        <div class="progress-bar">
-                            <div class="progress" style="width: ${task.progress}%"></div>
-                        </div>
-                        <div>${task.progress}%</div>
-                    </div>
-                    ` : ''}
-                    ${task.current_chapter ? `
-                    <div class="current-chapter">当前章节：${task.current_chapter}</div>
-                    ` : ''}
-                    ${chaptersHTML.length > 0 ? `
-                    <div class="chapter-updates">
-                        ${chaptersHTML}
-                    </div>
-                    ` : ''}
-                </div>
-            `;
+
+taskElement.innerHTML = `
+    <div class="task-status-icon"></div>
+    <div class="task-info">
+        <div class="task-meta">
+            <div><strong>任务ID：</strong>${taskId}</div>
+            <div class="status-label ${task.status.includes('failed') ? 'failed' : ''}">
+                <strong>状态：</strong>${statusMap[task.status] || task.status}
+            </div>
+        </div>
+        ${task.progress !== undefined ? `
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" style="width: ${task.progress}%"></div>
+            </div>
+            <div>${task.progress}% (${Math.round(task.total_chapters * task.progress / 100)}/${task.total_chapters})</div>
+        </div>` : ''}
+        ${task.current_chapter ? `
+        <div class="current-chapter">
+            当前章节：${task.current_chapter}<br>
+            总章节数：${task.total_chapters}
+        </div>` : ''}
+        ${chaptersHTML.length > 0 ? `
+        <div class="chapter-updates">
+            ${chaptersHTML}
+        </div>` : ''}
+    </div>
+`; // 确保闭合反引号
 
             // 自动滚动到最新更新
             if (chaptersHTML.length > 0) {
