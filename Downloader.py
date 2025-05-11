@@ -553,5 +553,12 @@ Github：https://github.com/Dlmily/Tomato-Novel-Downloader-Lite
         
         print("\n" + "="*50 + "\n")
 
+def get_total_chapters(book_id):
+    """获取书籍总章节数（供app.py调用）"""
+    headers = get_headers()
+    chapters = get_chapters_from_api(book_id, headers)
+    return len(chapters) if chapters else 0
+
+
 if __name__ == "__main__":
     main()
