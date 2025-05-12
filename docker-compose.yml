@@ -15,15 +15,9 @@ services:
       - DATA_PATH=/app/data
       - FLASK_ENV=production
       - TZ=Asia/Shanghai
-    networks:
-      - bridge
+    network_mode: "bridge"  
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-
-networks:
-  bridge:
-    external: true
-    name: bridge
