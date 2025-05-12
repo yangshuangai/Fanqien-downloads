@@ -366,22 +366,41 @@ def get_book_info(book_id, headers):
 
         soup = bs4.BeautifulSoup(response.text, 'html.parser')
         
-        name_element = soup.find('h1')
-        name = name_element.text if name_element else "未知书名"
+        # 增强名称提取逻辑（新增代码开始）
+        name = ""
+        # 尝试多种选择器获取书名
+        name_element = soup.find('h1', class_='book-name') or \
+                      soup.find('meta', {'property': 'og:novel:book_name'}) or \
+                      soup.find('meta', {'property': 'og:title'}) or \
+                      soup.find('h1', class_='title')
+        
+        if name_element:
+            if name_element.name == "meta":
+                name = name_element.get('content', '').strip()
+            else:
+                name = name_element.text.strip()
+        
+        # 从页面标题提取（新增）
+        if not name:
+            title_tag = soup.find('title')
+            if title_tag:
+                name = title_tag.text.split('_')[0].replace('丨', '').strip()
+        
+        # 最终兜底方案
+        name = name or f"书籍_{book_id}"
+        # 新增清理冗余后缀（修改位置）
+        if name:
+            name = re.sub(r'\s*完整版在线免费阅读$', '', name).strip()
         
         author_name = "未知作者"
-        author_name_element = soup.find('div', class_='author-name')
-        if author_name_element:
-            author_name_span = author_name_element.find('span', class_='author-name-text')
-            if author_name_span:
-                author_name = author_name_span.text
+        author_element = soup.find('div', class_='author-info')
+        if author_element:
+            author_element = author_element.find('span', class_='name')  # 层级选择
         
         description = "无简介"
-        description_element = soup.find('div', class_='page-abstract-content')
-        if description_element:
-            description_p = description_element.find('p')
-            if description_p:
-                description = description_p.text
+        desc_element = soup.find('div', {'class': 'book-desc'})  # 更新简介选择器
+        if desc_element:
+            description = desc_element.text.strip()
         
         return name, author_name, description
     except Exception as e:
@@ -406,7 +425,14 @@ def save_status(save_path, downloaded):
     with open(status_file, 'w', encoding='utf-8') as f:
         json.dump(list(downloaded), f, ensure_ascii=False, indent=2)
 
-def Run(book_id, save_path):
+class RunStatus:
+    def __init__(self, total):
+        self.current = 0
+        self.total = total
+        self.current_chapter = "初始化中..."
+        self.lock = threading.Lock()
+
+def Run(book_id, save_path, status=None):  # 修改函数签名
     def signal_handler(sig, frame):
         logging.warning("\n检测到程序中断，正在保存已下载内容...")
         write_downloaded_chapters_in_order()
@@ -489,6 +515,11 @@ def Run(book_id, save_path):
                         }
                         downloaded.add(chapter["id"])
                         success_count += 1
+                    # 更新状态
+                    if status:
+                        with status.lock:
+                            status.current += 1
+                            status.current_chapter = f"{chapter_title or chapter['title']}（{status.current}/{status.total}）"
                 else:
                     with lock:
                         failed_chapters.append(chapter)
